@@ -13,7 +13,10 @@ Todo:
 - [ ] Pursue and Evade
 - [ ] Wander
 - [ ] Arrival
-- [x] Obstacle Avoidance
+- [ ] Obstacle Avoidance
+	- [x] Avoid obstacles
+	- [ ] Make it so that the creature takes more room when going around obstacles (increase the 'width' of the vision line)
+	and start using the same collision circle we use to detect collision with the target
 - [ ] Containment
 - [ ] Wall Following
 - [ ] Path Following
