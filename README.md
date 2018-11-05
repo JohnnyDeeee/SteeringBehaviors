@@ -13,7 +13,7 @@ Todo:
 - [ ] Pursue and Evade
 - [ ] Wander
 - [ ] Arrival
-- [ ] Obstacle Avoidance
+- [x] Obstacle Avoidance
 - [ ] Containment
 - [ ] Wall Following
 - [ ] Path Following
