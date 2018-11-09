@@ -7,163 +7,18 @@ using System;
 using System.Collections.Generic;
 
 namespace SteeringBehaviors {
-    public class Collider {
-        public Vector2 position { get; set; }
-        public float radius { get; set; }
-
-        // TEMP
-        public Color color { get; set; }
-
-        public Collider(Vector2 position, float radius) {
-            this.position = position;
-            this.radius = radius;
-        }
-
-        public void Draw(SpriteBatch spriteBatch) {
-            spriteBatch.Begin();
-            spriteBatch.DrawCircle(position, radius, 180, color);
-            spriteBatch.End();
-        }
-    }
-
-    public class Creature {
-        // Movement properties
-        private Vector2 position;
-        private Vector2 velocity = new Vector2(0, 0);
-        private Vector2 acceleration = new Vector2(0, 0);
-        private float maxForce = 0.2f;
-        private float maxSpeed = 2f;//5f;
-        // Visual properties
-        private int width;
-        private int height;
-        private Polygon shape;
-        private float rotation;
-        // Avoidance properties
-        private Vector2 ahead;
-        private float visionLength = 90f;
-        // Target collision properties
-        private float colliderRadius = 10f;
-
-        public Creature(Vector2 position, int size, Color color) {
-            this.position = position;
-            width = size;
-            height = size + 5;
-        }
-
-        public void Update(Collider target, List<Collider> obstacles) {
-            // Keep tracking the target
-            Vector2 seekForce = Seek(target.position);
-
-            // Avoid any obstacles
-            Vector2 avoidForce = Avoid(obstacles);
-
-            // Check for collision with the target
-            Collision(target);
-
-            // Movement
-            acceleration += avoidForce != Vector2.Zero ? avoidForce : seekForce; // avoidForce has prio over seekForce
-            velocity += acceleration;
-            velocity = velocity.Truncate(maxSpeed);
-            position += velocity;
-            acceleration *= 0;
-
-            // TODO: Actually fix the bug where position can be NaN
-            if (float.IsNaN(position.X) || float.IsNaN(position.Y))
-                position = new Vector2(Game1.graphics.PreferredBackBufferWidth / 2, Game1.graphics.PreferredBackBufferHeight / 2);
-
-            // Important to draw shape on every update, because the rotation of the shape is dependant on where the target is
-            shape = CreateShape();
-
-            // Create the vision vector
-            ahead = position + Vector2.Normalize(velocity) * visionLength;
-        }
-
-        public void Draw(SpriteBatch spriteBatch) {
-            spriteBatch.Begin();
-            spriteBatch.DrawPolygon(position, shape, Color.White);
-            spriteBatch.DrawLine(position, ahead, Color.Red, 2f);
-            spriteBatch.DrawCircle(position, colliderRadius, 180, Color.LightBlue, 2f);
-            spriteBatch.End();
-        }
-
-        private Vector2 Seek(Vector2 targetPosition) {
-            Vector2 direction = Vector2.Normalize(targetPosition - position);
-            direction *= maxSpeed;
-            Vector2 steering = Vector2.Normalize(direction - velocity);
-            steering = steering.Truncate(maxForce);
-
-            return steering;
-        }
-
-        private Vector2 Avoid(List<Collider> obstacles) {
-            float closestObstacleDistance = 1 / 0f; // Initially, set it to infinity
-            Collider closestObstacle = null; // Most threatening
-            foreach (Collider obstacle in obstacles) {
-                // Check if ahead line collides with the obstacle
-                NetRumble.CollisionMath.CircleLineCollisionResult result = new NetRumble.CollisionMath.CircleLineCollisionResult();
-                NetRumble.CollisionMath.CircleLineCollide(obstacle.position, obstacle.radius, position, ahead, ref result);
-                if (result.Collision) { // Collision
-                    float distanceCreatureToObstacle = Vector2.Distance(position, obstacle.position);
-
-                    // Check if this is the closest obstacle with respect to the creature's position
-                    if (distanceCreatureToObstacle < closestObstacleDistance) { // Most threatening (closest)
-                        closestObstacleDistance = distanceCreatureToObstacle;
-                        closestObstacle = obstacle;
-                        obstacle.color = Color.Red;
-                    } else // Less threatening (further away)
-                        obstacle.color = Color.Orange;
-                } else // No collision
-                    obstacle.color = Color.Green;
-            }
-
-            if (closestObstacle == null)
-                return Vector2.Zero;
-
-            Vector2 avoidanceForce = Vector2.Normalize(ahead - closestObstacle.position);
-            avoidanceForce = avoidanceForce.Truncate(maxForce);
-            return avoidanceForce;
-        }
-
-        private void Collision(Collider target) {
-            Random random = new Random();
-            if(NetRumble.CollisionMath.CircleCircleIntersect(position, colliderRadius, target.position, target.radius))
-                target.position = new Vector2(random.Next(Game1.graphics.PreferredBackBufferWidth), random.Next(Game1.graphics.PreferredBackBufferHeight));
-        }
-
-        private Polygon CreateShape() {
-            rotation = (float)(Math.Atan2(velocity.Y, velocity.X) + Math.PI / 2); // Rotation towards the velocity
-
-            Vector2 pointLeft = new Vector2(-width / 2, height / 2); // Left point of the triangle
-            pointLeft = Vector2.Transform(pointLeft, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointLeft += new Vector2(0, 0); // Add the origin point
-
-            Vector2 pointRight = new Vector2(width / 2, height / 2); // Right point of the triangle
-            pointRight = Vector2.Transform(pointRight, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointRight += new Vector2(0, 0); // Add the origin point
-
-            Vector2 pointTop = new Vector2(0, -height / 2); // Top point of the triangle
-            pointTop = Vector2.Transform(pointTop, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointTop += new Vector2(0, 0); // Add the origin point
-
-            // Connect all points with lines to create a Polygon
-            Polygon shape = new Polygon(new Vector2[3] {
-                pointLeft, // Left
-                pointRight, // Right
-                pointTop // Top
-            });
-
-            return shape;
-        }
-    }
-
     public class Game1 : Game {
         public static GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
         private Random random = new Random();
         private List<Creature> creatures = new List<Creature>();
-        private List<Collider> obstacles = new List<Collider>();
-        private Collider target;
+        private List<Obstacle> obstacles = new List<Obstacle>();
+        private Target target;
         private MouseState previousMouseState;
+        private KeyboardState previousKeyboardState;
+        private SpriteFont font;
+
+        public static bool Debug = true;
 
         public Game1() {
             graphics = new GraphicsDeviceManager(this);
@@ -173,9 +28,9 @@ namespace SteeringBehaviors {
         protected override void Initialize() {
             this.IsMouseVisible = true;
 
-            target = new Collider(new Vector2(random.Next(graphics.PreferredBackBufferWidth), random.Next(graphics.PreferredBackBufferHeight)), 10f);
+            target = new Target(new Vector2(random.Next(graphics.PreferredBackBufferWidth), random.Next(graphics.PreferredBackBufferHeight)));
             creatures.Add(new Creature(
-                new Vector2(graphics.PreferredBackBufferWidth / 2, graphics.PreferredBackBufferHeight / 2),
+                new Vector2(0, 0),
                 15,
                 Color.Green
             ));
@@ -187,7 +42,7 @@ namespace SteeringBehaviors {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            font = Content.Load<SpriteFont>("font");
         }
 
         protected override void UnloadContent() {
@@ -198,19 +53,24 @@ namespace SteeringBehaviors {
         protected override void Update(GameTime gameTime) {
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
+            if (Keyboard.GetState().IsKeyUp(Keys.OemTilde) && previousKeyboardState.IsKeyDown(Keys.OemTilde))
+                Game1.Debug = !Game1.Debug;
             if (Mouse.GetState().LeftButton == ButtonState.Pressed)
-                target.position = Mouse.GetState().Position.ToVector2();
+                target.colliderPosition = Mouse.GetState().Position.ToVector2();
             if (Mouse.GetState().RightButton == ButtonState.Released && previousMouseState.RightButton == ButtonState.Pressed)
-                obstacles.Add(new Collider(Mouse.GetState().Position.ToVector2(), 55));
+                obstacles.Add(new Obstacle(Mouse.GetState().Position.ToVector2(), 55));
 
             previousMouseState = Mouse.GetState();
+            previousKeyboardState = Keyboard.GetState();
 
             foreach (Creature creature in creatures) {
                 creature.Update(target, obstacles);
             }
 
+            target.Update(creatures);
+
             if (random.NextDouble() < 0.004f)
-                obstacles.Add(new Collider(new Vector2(random.Next(graphics.PreferredBackBufferWidth), random.Next(graphics.PreferredBackBufferHeight)), random.Next(25, 50)));
+                obstacles.Add(new Obstacle(new Vector2(random.Next(graphics.PreferredBackBufferWidth), random.Next(graphics.PreferredBackBufferHeight)), random.Next(25, 50)));
 
             if (random.NextDouble() < 0.004f && obstacles.Count > 0)
                 obstacles.RemoveAt(0);
@@ -221,17 +81,22 @@ namespace SteeringBehaviors {
         protected override void Draw(GameTime gameTime) {
             GraphicsDevice.Clear(new Color(45, 52, 54, 1));
 
+            // Objects
             foreach (Creature creature in creatures) {
                 creature.Draw(spriteBatch);
             }
 
-            foreach (Collider obstacle in obstacles) {
+            foreach (Obstacle obstacle in obstacles) {
                 obstacle.Draw(spriteBatch);
             }
 
+            target.Draw(spriteBatch);
+
+            // UI
             spriteBatch.Begin();
-            spriteBatch.DrawPoint(target.position, Color.Red, 10f);
-            spriteBatch.DrawCircle(target.position, target.radius, 180, Color.LightBlue, 2f);
+            spriteBatch.DrawString(font, $"Press ~ to turn debug mode {(Game1.Debug ? "off" : "on")}", new Vector2(10, 400), Color.White);
+            spriteBatch.DrawString(font, $"Press Left mouse button to move the target", new Vector2(10, 420), Color.White);
+            spriteBatch.DrawString(font, $"Press Right mouse button to place an obstacle", new Vector2(10, 440), Color.White);
             spriteBatch.End();
 
             base.Draw(gameTime);
