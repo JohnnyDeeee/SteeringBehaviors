@@ -21,8 +21,6 @@ namespace SteeringBehaviors {
             spriteBatch.End();
         }
 
-        protected void Update() {
-            //
-        }
+        protected void Update() { }
     }
 }

@@ -8,9 +8,7 @@ using static NetRumble.CollisionMath;
 namespace SteeringBehaviors {
     public class Target : Collider {
 
-        public Target(Vector2 position) : base(position, 10f) {
-            //
-        }
+        public Target(Vector2 position) : base(position, 10f) { }
 
         public void Update(List<Creature> creatures) {
             // Check for collision with creature
@@ -26,6 +24,7 @@ namespace SteeringBehaviors {
         }
 
         private void Collision(List<Creature> creatures) {
+            // On collision with a creature, find a random new spot to sit at
             Random random = new Random();
             foreach (Creature creature in creatures) {
                 if (CircleCircleIntersect(colliderPosition, colliderRadius, creature.colliderPosition, creature.colliderRadius)) {

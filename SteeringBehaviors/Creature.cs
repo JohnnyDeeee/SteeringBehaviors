@@ -13,11 +13,14 @@ namespace SteeringBehaviors {
         private Vector2 acceleration = Vector2.Zero;
         private float maxForce = 0.2f;
         private float maxSpeed = 2f;//5f;
+
         // Visual properties
         private int width;
         private int height;
         private Polygon shape;
         private float rotation;
+        private Color color;
+
         // Avoidance properties
         private Vector2 ahead;
         private float visionLength = 90f;
@@ -26,6 +29,7 @@ namespace SteeringBehaviors {
             this.colliderPosition = position;
             width = size;
             height = size + 5;
+            this.color = color;
         }
 
         public void Update(Target target, List<Obstacle> obstacles) {
@@ -35,7 +39,7 @@ namespace SteeringBehaviors {
             // Avoid any obstacles
             Vector2 avoidForce = Avoid(obstacles);
 
-            // Movement
+            // Physics movement
             acceleration += avoidForce != Vector2.Zero ? avoidForce : seekForce; // avoidForce has prio over seekForce
             velocity += acceleration;
             velocity = velocity.Truncate(maxSpeed);
@@ -59,13 +63,17 @@ namespace SteeringBehaviors {
 
         public new void Draw(SpriteBatch spriteBatch) {
             spriteBatch.Begin();
-            spriteBatch.DrawPolygon(colliderPosition, shape, Color.White);
-            spriteBatch.DrawLine(colliderPosition, ahead, Color.Red, 2f);
+            spriteBatch.DrawPolygon(colliderPosition, shape, color);
+            
+            if(Game1.Debug)
+                spriteBatch.DrawLine(colliderPosition, ahead, Color.Red, 2f);
+
             spriteBatch.End();
 
             base.Draw(spriteBatch);
         }
 
+        // Move towards the target with smooth turning
         private Vector2 Seek(Vector2 targetPosition) {
             Vector2 direction = Vector2.Normalize(targetPosition - colliderPosition);
             direction *= maxSpeed;
@@ -75,6 +83,7 @@ namespace SteeringBehaviors {
             return steering;
         }
 
+        // Avoid obstacles with smooth turning
         private Vector2 Avoid(List<Obstacle> obstacles) {
             float closestObstacleDistance = 1 / 0f; // Initially, set it to infinity
             Obstacle closestObstacle = null; // Most threatening
@@ -104,6 +113,7 @@ namespace SteeringBehaviors {
             return avoidanceForce;
         }
 
+        // Creates a polygon shape
         private Polygon CreateShape() {
             rotation = (float)(Math.Atan2(velocity.Y, velocity.X) + Math.PI / 2); // Rotation towards the velocity
 
