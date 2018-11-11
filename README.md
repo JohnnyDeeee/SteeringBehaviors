@@ -15,7 +15,7 @@ Todo:
 - [ ] Arrival
 - [ ] Obstacle Avoidance
 	- [x] Avoid obstacles
-	- [ ] Make it so that the creature takes more room when going around obstacles (added vision range)
+	- [x] Make it so that the creature takes more room when going around obstacles (added vision range)
 	- [ ] Small bugg when 2 obstacles are inside eachother, creature will avoid 1 but go through the other in the process (creature will die when colliding when we implement genetic algorithms)
 - [ ] Containment
 - [ ] Wall Following
