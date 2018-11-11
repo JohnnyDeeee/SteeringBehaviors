@@ -15,9 +15,12 @@ Todo:
 - [ ] Arrival
 - [ ] Obstacle Avoidance
 	- [x] Avoid obstacles
-	- [ ] Make it so that the creature takes more room when going around obstacles (increase the 'width' of the vision line)
-	- [ ] Small bugg when 2 obstacles are inside eachother, creature will avoid 1 but go through the other in the process
+	- [ ] Make it so that the creature takes more room when going around obstacles (added vision range)
+	- [ ] Small bugg when 2 obstacles are inside eachother, creature will avoid 1 but go through the other in the process (creature will die when colliding when we implement genetic algorithms)
 - [ ] Containment
 - [ ] Wall Following
 - [ ] Path Following
 - [ ] Flow Field Following
+- [ ] Genetic Algortihm (find the best values for maxForce, maxSpeed and visionLengh)
+Example: Low vision range needs high maxForce, because it will run into obstacles otherwise
+	- [ ] Let creatures die when they collide with an obstacle

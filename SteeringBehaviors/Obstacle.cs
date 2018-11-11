@@ -8,17 +8,17 @@ namespace SteeringBehaviors {
         private float radius;
         public static readonly float colliderRadiusOffset = 10;
 
-        public Obstacle(Vector2 position, float radius) : base(position, radius + colliderRadiusOffset) {
+        public Obstacle(Vector2 position, float radius, SpriteBatch spriteBatch) : base(position, radius + colliderRadiusOffset, spriteBatch) {
             color = Color.Green;
             this.radius = radius;
         }
 
-        public new void Draw(SpriteBatch spriteBatch) {
+        public new void Draw() {
             spriteBatch.Begin();
             spriteBatch.DrawCircle(colliderPosition, radius, 180, Color.Red);
             spriteBatch.End();
 
-            base.Draw(spriteBatch);
+            base.Draw();
         }
     }
 }

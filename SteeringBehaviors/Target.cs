@@ -8,19 +8,19 @@ using static NetRumble.CollisionMath;
 namespace SteeringBehaviors {
     public class Target : Collider {
 
-        public Target(Vector2 position) : base(position, 10f) { }
+        public Target(Vector2 position, SpriteBatch spriteBatch) : base(position, 10f, spriteBatch) { }
 
         public void Update(List<Creature> creatures) {
             // Check for collision with creature
             Collision(creatures);
         }
 
-        public new void Draw(SpriteBatch spriteBatch) {
+        public new void Draw() {
             spriteBatch.Begin();
             spriteBatch.DrawPoint(colliderPosition, Color.Red, 10f);
             spriteBatch.End();
 
-            base.Draw(spriteBatch);
+            base.Draw();
         }
 
         private void Collision(List<Creature> creatures) {

@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Shapes;
-using NetRumble;
 using System;
 using System.Collections.Generic;
 using static NetRumble.CollisionMath;
@@ -13,7 +12,7 @@ namespace SteeringBehaviors {
         private Vector2 velocity = Vector2.Zero;
         private Vector2 acceleration = Vector2.Zero;
         private readonly float maxForce = 0.18f;
-        private readonly float maxSpeed = 5f; // Clamped at 1.5f
+        private readonly float maxSpeed = 0.1f;//5f; // Clamped at 1.5f
 
         // Visual properties
         private int width;
@@ -21,35 +20,35 @@ namespace SteeringBehaviors {
         private Polygon shape;
         private float rotation;
         private Color color;
-        private Color originalColor;
-        public bool marked { get; set; }
 
         // Avoidance properties
         private Vector2 ahead;
-        private readonly float visionLength = 90f;
+        private readonly float visionLength = 50f;
         private readonly Angle visionAngle = new Angle((float)Math.PI / 4);
 
-        public Creature(Vector2 position, int size, Color color) : base(position, size) {
+        private bool debug;
+
+        public Creature(Vector2 position, int size, Color color, SpriteBatch spriteBatch, bool debug = false) : base(position, size, spriteBatch) {
             colliderPosition = position;
             width = size;
             height = size + 5;
-            originalColor = color;
-            this.color = originalColor;
+            this.color = color;
+            this.debug = debug;
             shape = CreateShape();
         }
 
-        public void Update(Target target, List<Obstacle> obstacles, List<Creature> creatures) {
-            marked = false; // Always reset our marked state, so that we don't stay marked forever
+        public void Update(Target target, List<Collider> colliders) {
+            if (debug) {
+                color = Color.Blue;
+            }
 
-            Vision(creatures);
-            // Create the vision vector
-            ahead = colliderPosition + Vector2.Normalize(velocity) * visionLength;
+            List<Vector2> visibles = Vision(colliders);
 
             // Keep tracking the target
             Vector2 seekForce = Seek(target.colliderPosition);
 
             // Avoid any obstacles
-            Vector2 avoidForce = Avoid(obstacles);
+            Vector2 avoidForce = Avoid(visibles);
 
             // Physics movement
             acceleration += avoidForce != Vector2.Zero ? avoidForce : seekForce; // avoidForce has prio over seekForce
@@ -69,42 +68,89 @@ namespace SteeringBehaviors {
             // Rotation
             Vector2 newColliderPosition = colliderPosition + velocity;
             rotation = (float)(Math.Atan2(colliderPosition.Y - newColliderPosition.Y, colliderPosition.X - newColliderPosition.X) + Math.PI / 2); // Rotation towards the velocity
-
-            // Change color if we are marked
-            color = marked ? Color.Red : originalColor;
         }
 
-        public new void Draw(SpriteBatch spriteBatch) {
+        public new void Draw() {
             // Translate to world origin, rotate, translate back to our world position
             // this enables us to define al our vectors with respect to the local origin (our position)
             Matrix rotationMatrix = Matrix.CreateTranslation(Vector3.Zero) * Matrix.CreateRotationZ(rotation) * Matrix.CreateTranslation(new Vector3(colliderPosition.X, colliderPosition.Y, 0));
 
             spriteBatch.Begin(transformMatrix: rotationMatrix);
             spriteBatch.DrawPolygon(Vector2.Zero, shape, color);
-            spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(visionAngle), Color.LightBlue);
-            spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(-visionAngle), Color.LightBlue);
+
+            if (Game1.Debug) {
+                spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(visionAngle), Color.LightBlue);
+                spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(-visionAngle), Color.LightBlue);
+            }
             spriteBatch.End();
 
             // ahead already has the right rotation
             spriteBatch.Begin();
             if (Game1.Debug) {
-                spriteBatch.DrawLine(colliderPosition, ahead, Color.Red, 2f);
+                //
             }
             spriteBatch.End();
 
-            base.Draw(spriteBatch);
+            base.Draw();
         }
 
-        private void Vision(List<Creature> creatures) {
-            // TODO: Get creatures in range (let's say visionLength all around)
-            foreach(Creature creature in creatures) {
-                if (Vector2.Distance(colliderPosition, creature.colliderPosition) > visionLength)
-                    continue; // Ignore creatures that are further than our vision length
+        private List<Vector2> Vision(List<Collider> colliders) {
+            List<Vector2> visibleVectors = new List<Vector2>();
 
-                // TODO: Check if angle of our vector to creature vector is within our vision range
-                // - if so: creature.marked = true; // Target is in our vision field
-                // - else: do nothing
+            // Create the vision vector
+            ahead = colliderPosition + Vector2.Normalize(velocity) * visionLength;
+
+            foreach (Collider collider in colliders) {
+                if (collider.Equals(this)) {
+                    continue; // You shouldn't be able to 'see' yourself
+                }
+
+                DrawLater(() => spriteBatch.DrawPoint(ahead, Color.Red, 5f)); // DEBUG: How far can we see in front of us (old)
+
+                DrawLater(() => spriteBatch.DrawCircle(colliderPosition, visionLength, 180, Color.DarkBlue)); // DEBUG: How far we can see around us
+                if (!CircleCircleIntersect(colliderPosition, visionLength, collider.colliderPosition, collider.colliderRadius)) {
+                    continue; // Collider is not in range of our vision 'collider'
+                }
+
+                // Check if a line from here to collider intersects with the collider
+                // TODO: Get the point (on the edge) where it collides, so we can steer away from that point
+                // instead of steering away from the collider's center
+                // I thought result.point would help, but this one just sits at the collider's center
+                // BTW i disabled Avoid(), so it doesn't start spinning when it sees something
+                CircleLineCollisionResult result = new CircleLineCollisionResult();
+                CircleLineCollide(collider.colliderPosition, collider.colliderRadius, colliderPosition, collider.colliderPosition, ref result);
+
+                DrawLater(() => spriteBatch.DrawLine(colliderPosition, result.Point, Color.Orange)); // DEBUG: Should draw a line to the intersection point on the edge of the circle, but instead it draws it on the center
+                DrawLater(() => spriteBatch.DrawPoint(result.Point, result.Collision ? Color.LightGreen : Color.LightBlue, 10f)); // DEBUG: Intersection point between our ray and the collider
+
+                if (!result.Collision) {
+                    continue; // Collider is not in range
+                }
+
+                // Check if the collider is in our vision segment
+                Vector2 aheadPos = ahead - colliderPosition; // ahead with respect to our position
+                Vector2 colliderPos = result.Point - colliderPosition;
+
+                double ourMagnitude = Math.Sqrt(Math.Pow(aheadPos.X, 2) + Math.Pow(aheadPos.Y, 2));
+                double theirMagnitude = Math.Sqrt(Math.Pow(colliderPos.X, 2) + Math.Pow(colliderPos.Y, 2));
+                double angleBetweenUs = Math.Acos(aheadPos.Dot(colliderPos) / (ourMagnitude * theirMagnitude));
+                if (Double.IsNaN(angleBetweenUs))
+                    angleBetweenUs = 0;
+
+                if (angleBetweenUs < -visionAngle || angleBetweenUs > visionAngle) {
+                    continue; // Target is not within vision angles
+                }
+
+                if (theirMagnitude > ourMagnitude) {
+                    continue; // Target is not within vision length         
+                }
+
+                DrawLater(() => spriteBatch.DrawPoint(collider.colliderPosition, Color.Green, 5f)); // DEBUG: What we see is in range
+
+                visibleVectors.Add(ahead);
             }
+
+            return visibleVectors;
         }
 
         // Move towards the target with smooth turning
@@ -118,31 +164,28 @@ namespace SteeringBehaviors {
         }
 
         // Avoid obstacles with smooth turning
-        private Vector2 Avoid(List<Obstacle> obstacles) {
-            float closestObstacleDistance = 1 / 0f; // Initially, set it to infinity
-            Obstacle closestObstacle = null; // Most threatening
-            foreach (Obstacle obstacle in obstacles) {
-                // Check if ahead line collides with the obstacle
-                CircleLineCollisionResult result = new NetRumble.CollisionMath.CircleLineCollisionResult();
-                CircleLineCollide(obstacle.colliderPosition, obstacle.colliderRadius, colliderPosition, ahead, ref result);
-                if (result.Collision) { // Collision
-                    float distanceCreatureToObstacle = Vector2.Distance(colliderPosition, obstacle.colliderPosition);
+        private Vector2 Avoid(List<Vector2> points) {
+            return Vector2.Zero; // DEBUG
 
-                    // Check if this is the closest obstacle with respect to the creature's position
-                    if (distanceCreatureToObstacle < closestObstacleDistance) { // Most threatening (closest)
-                        closestObstacleDistance = distanceCreatureToObstacle;
-                        closestObstacle = obstacle;
-                        obstacle.color = Color.Red;
-                    } else // Less threatening (further away)
-                        obstacle.color = Color.Orange;
-                } else // No collision
-                    obstacle.color = Color.Green;
+            float closesPointDistance = 1 / 0f; // Initially, set it to infinity
+            Vector2 closesPoint = Vector2.Zero; // Most threatening
+            foreach (Vector2 point in points) {
+                float distanceCreatureToPoint = Vector2.Distance(colliderPosition, point);
+
+                // Check if this is the closest obstacle with respect to the creature's position
+                if (distanceCreatureToPoint < closesPointDistance) {
+                    closesPointDistance = distanceCreatureToPoint;
+                    closesPoint = point;
+                }
             }
 
-            if (closestObstacle == null)
+            if (closesPoint == Vector2.Zero) {
                 return Vector2.Zero;
+            }
 
-            Vector2 avoidanceForce = Vector2.Normalize(ahead - closestObstacle.colliderPosition);
+            DrawLater(() => spriteBatch.DrawLine(colliderPosition, closesPoint, Color.Purple));
+
+            Vector2 avoidanceForce = Vector2.Normalize(ahead - closesPoint);
             avoidanceForce = avoidanceForce.Truncate(maxForce);
             return avoidanceForce;
         }
