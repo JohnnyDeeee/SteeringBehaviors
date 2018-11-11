@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteeringBehaviors", "SteeringBehaviors\SteeringBehaviors.csproj", "{3C76ECC7-1C02-48F2-83F3-32FE4A7855C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheDotProduct", "..\TheDotProduct\TheDotProduct\TheDotProduct.csproj", "{92F64A5B-E727-4828-B31E-08856B8E3CF6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheDotProduct2", "..\TheDotProduct\TheDotProduct2\TheDotProduct2.csproj", "{E1CC9BB2-BD38-4BAC-96FA-EA27382AE1CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,11 +19,19 @@ Global
 		{3C76ECC7-1C02-48F2-83F3-32FE4A7855C7}.Debug|x86.Build.0 = Debug|x86
 		{3C76ECC7-1C02-48F2-83F3-32FE4A7855C7}.Release|x86.ActiveCfg = Release|x86
 		{3C76ECC7-1C02-48F2-83F3-32FE4A7855C7}.Release|x86.Build.0 = Release|x86
+		{92F64A5B-E727-4828-B31E-08856B8E3CF6}.Debug|x86.ActiveCfg = Debug|x86
+		{92F64A5B-E727-4828-B31E-08856B8E3CF6}.Debug|x86.Build.0 = Debug|x86
+		{92F64A5B-E727-4828-B31E-08856B8E3CF6}.Release|x86.ActiveCfg = Release|x86
+		{92F64A5B-E727-4828-B31E-08856B8E3CF6}.Release|x86.Build.0 = Release|x86
+		{E1CC9BB2-BD38-4BAC-96FA-EA27382AE1CF}.Debug|x86.ActiveCfg = Debug|x86
+		{E1CC9BB2-BD38-4BAC-96FA-EA27382AE1CF}.Debug|x86.Build.0 = Debug|x86
+		{E1CC9BB2-BD38-4BAC-96FA-EA27382AE1CF}.Release|x86.ActiveCfg = Release|x86
+		{E1CC9BB2-BD38-4BAC-96FA-EA27382AE1CF}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {6DAFFFC3-7AA3-4608-8A2F-25B89841F889}
+		SolutionGuid = {C15FCBC7-41E9-47D7-80B0-6C8457F2A5B7}
 	EndGlobalSection
 EndGlobal

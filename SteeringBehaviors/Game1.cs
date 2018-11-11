@@ -11,7 +11,7 @@ namespace SteeringBehaviors {
         public static GraphicsDeviceManager graphics;
         public static bool Debug = false;
 
-        private bool randomObstacleMode = true;
+        private bool randomObstacleMode = false;
 
         private SpriteBatch spriteBatch;
         private Random random = new Random();
@@ -22,6 +22,7 @@ namespace SteeringBehaviors {
         private KeyboardState previousKeyboardState;
         private SpriteFont font;
         private int creatureAmount = 2;
+        private int maxFrameRate = 30;
 
         public Game1() {
             graphics = new GraphicsDeviceManager(this);
@@ -34,13 +35,14 @@ namespace SteeringBehaviors {
 
         protected override void Initialize() {
             this.IsMouseVisible = true;
+            TargetElapsedTime = TimeSpan.FromSeconds(1d / maxFrameRate);
 
             // Create target and creature(s)
             target = new Target(RandomVector());
             for (int i = 0; i < creatureAmount; i++) {
                 creatures.Add(new Creature(
                     RandomVector(),
-                    15,
+                    10,
                     Color.LightBlue
                 ));
             }
@@ -79,7 +81,7 @@ namespace SteeringBehaviors {
 
             // Update objects
             foreach (Creature creature in creatures) {
-                creature.Update(target, obstacles);
+                creature.Update(target, obstacles, creatures);
             }
 
             target.Update(creatures);

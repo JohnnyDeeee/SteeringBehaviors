@@ -45,6 +45,7 @@
     <Compile Include="CollisionMath.cs" />
     <Compile Include="Creature.cs" />
     <Compile Include="Game1.cs" />
+    <Compile Include="Helper.cs" />
     <Compile Include="Obstacle.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

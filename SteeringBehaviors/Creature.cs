@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.Shapes;
+using NetRumble;
 using System;
 using System.Collections.Generic;
 using static NetRumble.CollisionMath;
@@ -11,8 +12,8 @@ namespace SteeringBehaviors {
         // Movement properties
         private Vector2 velocity = Vector2.Zero;
         private Vector2 acceleration = Vector2.Zero;
-        private float maxForce = 0.2f;
-        private float maxSpeed = 2f;//5f;
+        private readonly float maxForce = 0.18f;
+        private readonly float maxSpeed = 5f; // Clamped at 1.5f
 
         // Visual properties
         private int width;
@@ -20,19 +21,30 @@ namespace SteeringBehaviors {
         private Polygon shape;
         private float rotation;
         private Color color;
+        private Color originalColor;
+        public bool marked { get; set; }
 
         // Avoidance properties
         private Vector2 ahead;
-        private float visionLength = 90f;
+        private readonly float visionLength = 90f;
+        private readonly Angle visionAngle = new Angle((float)Math.PI / 4);
 
-        public Creature(Vector2 position, int size, Color color) : base(position, 10f) {
-            this.colliderPosition = position;
+        public Creature(Vector2 position, int size, Color color) : base(position, size) {
+            colliderPosition = position;
             width = size;
             height = size + 5;
-            this.color = color;
+            originalColor = color;
+            this.color = originalColor;
+            shape = CreateShape();
         }
 
-        public void Update(Target target, List<Obstacle> obstacles) {
+        public void Update(Target target, List<Obstacle> obstacles, List<Creature> creatures) {
+            marked = false; // Always reset our marked state, so that we don't stay marked forever
+
+            Vision(creatures);
+            // Create the vision vector
+            ahead = colliderPosition + Vector2.Normalize(velocity) * visionLength;
+
             // Keep tracking the target
             Vector2 seekForce = Seek(target.colliderPosition);
 
@@ -54,29 +66,51 @@ namespace SteeringBehaviors {
                 velocity = Vector2.Zero;
             }
 
-            // Important to draw shape on every update, because the rotation of the shape is dependant on where the target is
-            shape = CreateShape();
+            // Rotation
+            Vector2 newColliderPosition = colliderPosition + velocity;
+            rotation = (float)(Math.Atan2(colliderPosition.Y - newColliderPosition.Y, colliderPosition.X - newColliderPosition.X) + Math.PI / 2); // Rotation towards the velocity
 
-            // Create the vision vector
-            ahead = colliderPosition + Vector2.Normalize(velocity) * visionLength;
+            // Change color if we are marked
+            color = marked ? Color.Red : originalColor;
         }
 
         public new void Draw(SpriteBatch spriteBatch) {
-            spriteBatch.Begin();
-            spriteBatch.DrawPolygon(colliderPosition, shape, color);
-            
-            if(Game1.Debug)
-                spriteBatch.DrawLine(colliderPosition, ahead, Color.Red, 2f);
+            // Translate to world origin, rotate, translate back to our world position
+            // this enables us to define al our vectors with respect to the local origin (our position)
+            Matrix rotationMatrix = Matrix.CreateTranslation(Vector3.Zero) * Matrix.CreateRotationZ(rotation) * Matrix.CreateTranslation(new Vector3(colliderPosition.X, colliderPosition.Y, 0));
 
+            spriteBatch.Begin(transformMatrix: rotationMatrix);
+            spriteBatch.DrawPolygon(Vector2.Zero, shape, color);
+            spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(visionAngle), Color.LightBlue);
+            spriteBatch.DrawLine(Vector2.Zero, new Vector2(0, visionLength).Rotate(-visionAngle), Color.LightBlue);
+            spriteBatch.End();
+
+            // ahead already has the right rotation
+            spriteBatch.Begin();
+            if (Game1.Debug) {
+                spriteBatch.DrawLine(colliderPosition, ahead, Color.Red, 2f);
+            }
             spriteBatch.End();
 
             base.Draw(spriteBatch);
         }
 
+        private void Vision(List<Creature> creatures) {
+            // TODO: Get creatures in range (let's say visionLength all around)
+            foreach(Creature creature in creatures) {
+                if (Vector2.Distance(colliderPosition, creature.colliderPosition) > visionLength)
+                    continue; // Ignore creatures that are further than our vision length
+
+                // TODO: Check if angle of our vector to creature vector is within our vision range
+                // - if so: creature.marked = true; // Target is in our vision field
+                // - else: do nothing
+            }
+        }
+
         // Move towards the target with smooth turning
         private Vector2 Seek(Vector2 targetPosition) {
             Vector2 direction = Vector2.Normalize(targetPosition - colliderPosition);
-            direction *= maxSpeed;
+            direction *= MathHelper.Clamp(maxSpeed, 1.5f, maxSpeed); // Must be 1.5f min, otherwise creature is going really fast left and right
             Vector2 steering = Vector2.Normalize(direction - velocity);
             steering = steering.Truncate(maxForce);
 
@@ -115,19 +149,9 @@ namespace SteeringBehaviors {
 
         // Creates a polygon shape
         private Polygon CreateShape() {
-            rotation = (float)(Math.Atan2(velocity.Y, velocity.X) + Math.PI / 2); // Rotation towards the velocity
-
-            Vector2 pointLeft = new Vector2(-width / 2, height / 2); // Left point of the triangle
-            pointLeft = Vector2.Transform(pointLeft, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointLeft += new Vector2(0, 0); // Add the origin point
-
-            Vector2 pointRight = new Vector2(width / 2, height / 2); // Right point of the triangle
-            pointRight = Vector2.Transform(pointRight, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointRight += new Vector2(0, 0); // Add the origin point
-
-            Vector2 pointTop = new Vector2(0, -height / 2); // Top point of the triangle
-            pointTop = Vector2.Transform(pointTop, Matrix.CreateRotationZ(rotation)); // Calculate new vector when rotating
-            pointTop += new Vector2(0, 0); // Add the origin point
+            Vector2 pointLeft = new Vector2(-width, -width); // Left point of the triangle
+            Vector2 pointRight = new Vector2(width, -width); // Right point of the triangle
+            Vector2 pointTop = new Vector2(0, height); // Top point of the triangle
 
             // Connect all points with lines to create a Polygon
             Polygon shape = new Polygon(new Vector2[3] {
