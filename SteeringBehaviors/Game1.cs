@@ -21,7 +21,7 @@ namespace SteeringBehaviors {
         private KeyboardState previousKeyboardState;
         private SpriteFont font;
         private int creatureAmount = 1;
-        private int maxFrameRate = 30;
+        private int maxFrameRate = 60;
 
         public Game1() {
             graphics = new GraphicsDeviceManager(this);
@@ -34,7 +34,6 @@ namespace SteeringBehaviors {
 
         protected override void Initialize() {
             this.IsMouseVisible = true;
-            TargetElapsedTime = TimeSpan.FromSeconds(1d / maxFrameRate);
 
             base.Initialize();
         }
@@ -49,7 +48,7 @@ namespace SteeringBehaviors {
                 creatures.Add(new Creature(
                     RandomVector(),
                     10,
-                    Color.LightBlue,
+                    Color.White,
                     spriteBatch
                 ));
             }
@@ -84,15 +83,21 @@ namespace SteeringBehaviors {
                 target.colliderPosition = Mouse.GetState().Position.ToVector2();
             }
 
-            if (Keyboard.GetState().IsKeyUp(Keys.OemPlus) && previousKeyboardState.IsKeyDown(Keys.OemPlus)) // PLUS(+) - Add debug creature
+            if (Keyboard.GetState().IsKeyUp(Keys.A) && previousKeyboardState.IsKeyDown(Keys.A)) // A - Add debug creature
 {
-                creatures.Add(new Creature(Mouse.GetState().Position.ToVector2(), 10, Color.Blue, spriteBatch, true));
+                creatures.Add(new Creature(Mouse.GetState().Position.ToVector2(), 10, Color.White, spriteBatch));
             }
 
             if (Mouse.GetState().RightButton == ButtonState.Released && previousMouseState.RightButton == ButtonState.Pressed) // RIGHT_BUTTON - Add obstacle
 {
                 obstacles.Add(new Obstacle(Mouse.GetState().Position.ToVector2(), 55, spriteBatch));
             }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.OemPlus))
+                maxFrameRate = maxFrameRate < 60 ? maxFrameRate+1 : 60;
+            if (Keyboard.GetState().IsKeyDown(Keys.OemMinus))
+                maxFrameRate = maxFrameRate > 5 ? maxFrameRate-1 : 5;
+            TargetElapsedTime = TimeSpan.FromSeconds(1d / maxFrameRate);
 
             // Save inputs for access in next frame
             previousMouseState = Mouse.GetState();
@@ -107,7 +112,7 @@ namespace SteeringBehaviors {
 
             if (randomObstacleMode) {
                 // Add random obstacles
-                if (random.NextDouble() < 0.02f) {
+                if (random.NextDouble() < 0.008f) {
                     obstacles.Add(new Obstacle(new Vector2(random.Next(graphics.PreferredBackBufferWidth), random.Next(graphics.PreferredBackBufferHeight)), random.Next(25, 50), spriteBatch));
                 }
 
@@ -136,6 +141,8 @@ namespace SteeringBehaviors {
 
             // Draw UI
             spriteBatch.Begin();
+            spriteBatch.DrawString(font, $"Press A to add another creature ({creatures.Count()})", new Vector2(10, 360), Color.White);
+            spriteBatch.DrawString(font, $"Press +/- to increase/decrease framerate cap: {maxFrameRate}", new Vector2(10, 380), Color.White);
             spriteBatch.DrawString(font, $"Press ~ to turn debug mode {(Game1.Debug ? "off" : "on")}", new Vector2(10, 400), Color.White);
             spriteBatch.DrawString(font, $"Press D to turn random obstacle mode {(randomObstacleMode ? "off" : "on")}", new Vector2(10, 420), Color.White);
             spriteBatch.DrawString(font, $"Press Left mouse button to move the target", new Vector2(10, 440), Color.White);

@@ -18,8 +18,10 @@ namespace SteeringBehaviors {
         }
 
         protected void Draw() {
-            if (!Game1.Debug)
+            if (!Game1.Debug) {
+                spriteBatchBuffer.Clear();
                 return;
+            }
 
             spriteBatch.Begin();
             spriteBatch.DrawCircle(colliderPosition, colliderRadius, 180, Color.White);
