@@ -21,6 +21,5 @@ Todo:
 - [ ] Wall Following
 - [ ] Path Following
 - [ ] Flow Field Following
-- [ ] Genetic Algortihm (find the best values for maxForce, maxSpeed and visionLengh)
-Example: Low vision range needs high maxForce, because it will run into obstacles otherwise
+- [ ] Genetic Algortihm (find the best values for maxForce, maxSpeed and visionLengh) Example: Low vision range needs high maxForce, because it will run into obstacles otherwise
 	- [ ] Let creatures die when they collide with an obstacle

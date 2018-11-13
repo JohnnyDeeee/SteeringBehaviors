@@ -26,6 +26,9 @@ namespace SteeringBehaviors {
         public Game1() {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+
+            graphics.PreferredBackBufferHeight = 720;
+            graphics.PreferredBackBufferWidth = 1280;
         }
 
         public Vector2 RandomVector() {
@@ -141,12 +144,12 @@ namespace SteeringBehaviors {
 
             // Draw UI
             spriteBatch.Begin();
-            spriteBatch.DrawString(font, $"Press A to add another creature ({creatures.Count()})", new Vector2(10, 360), Color.White);
-            spriteBatch.DrawString(font, $"Press +/- to increase/decrease framerate cap: {maxFrameRate}", new Vector2(10, 380), Color.White);
-            spriteBatch.DrawString(font, $"Press ~ to turn debug mode {(Game1.Debug ? "off" : "on")}", new Vector2(10, 400), Color.White);
-            spriteBatch.DrawString(font, $"Press D to turn random obstacle mode {(randomObstacleMode ? "off" : "on")}", new Vector2(10, 420), Color.White);
-            spriteBatch.DrawString(font, $"Press Left mouse button to move the target", new Vector2(10, 440), Color.White);
-            spriteBatch.DrawString(font, $"Press Right mouse button to place an obstacle", new Vector2(10, 460), Color.White);
+            spriteBatch.DrawString(font, $"Press A to add another creature ({creatures.Count()})", new Vector2(10, graphics.PreferredBackBufferHeight-100), Color.White);
+            spriteBatch.DrawString(font, $"Press +/- to increase/decrease framerate cap: {maxFrameRate}", new Vector2(10, graphics.PreferredBackBufferHeight-80), Color.White);
+            spriteBatch.DrawString(font, $"Press ~ to turn debug mode {(Game1.Debug ? "off" : "on")}", new Vector2(10, graphics.PreferredBackBufferHeight-60), Color.White);
+            spriteBatch.DrawString(font, $"Press D to turn random obstacle mode {(randomObstacleMode ? "off" : "on")}", new Vector2(10, graphics.PreferredBackBufferHeight-40), Color.White);
+            spriteBatch.DrawString(font, $"Press Left mouse button to move the target", new Vector2(10, graphics.PreferredBackBufferHeight-20), Color.White);
+            spriteBatch.DrawString(font, $"Press Right mouse button to place an obstacle", new Vector2(10, graphics.PreferredBackBufferHeight), Color.White);
             spriteBatch.End();
 
             base.Draw(gameTime);
