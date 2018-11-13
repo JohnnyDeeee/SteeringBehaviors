@@ -4,6 +4,7 @@ using MonoGame.Extended;
 using MonoGame.Extended.Shapes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static NetRumble.CollisionMath;
 
 namespace SteeringBehaviors {
@@ -19,14 +20,14 @@ namespace SteeringBehaviors {
         private int height;
         private Polygon shape;
         private float rotation;
-        private Color color;
+        private Color[] color;
 
         // Avoidance properties
         private Vector2 ahead;
         private readonly float visionLength = 90f;
         private readonly Angle visionAngle = new Angle((float)Math.PI / 4);
 
-        public Creature(Vector2 position, int size, Color color, SpriteBatch spriteBatch) : base(position, size, spriteBatch) {
+        public Creature(Vector2 position, int size, Color[] color, SpriteBatch spriteBatch) : base(position, size, spriteBatch) {
             colliderPosition = position;
             width = size;
             height = size + 5;
@@ -51,8 +52,8 @@ namespace SteeringBehaviors {
             acceleration *= 0;
 
             // Rotation
-            Vector2 newColliderPosition = colliderPosition + velocity;
-            rotation = (float)(Math.Atan2(colliderPosition.Y - newColliderPosition.Y, colliderPosition.X - newColliderPosition.X) + Math.PI / 2); // Rotation towards the velocity
+            //Vector2 newColliderPosition = colliderPosition + velocity;
+            //rotation = (float)(Math.Atan2(colliderPosition.Y - newColliderPosition.Y, colliderPosition.X - newColliderPosition.X) + Math.PI / 2); // Rotation towards the velocity
         }
 
         public new void Draw() {
@@ -61,7 +62,11 @@ namespace SteeringBehaviors {
             Matrix rotationMatrix = Matrix.CreateTranslation(Vector3.Zero) * Matrix.CreateRotationZ(rotation) * Matrix.CreateTranslation(new Vector3(colliderPosition.X, colliderPosition.Y, 0));
 
             spriteBatch.Begin(transformMatrix: rotationMatrix);
-            spriteBatch.DrawPolygon(Vector2.Zero, shape, color);
+            for(int x = 0; x < Game1.chunkSize; x++) {
+                for (int y = 0; y < Game1.chunkSize; y++) {
+                    spriteBatch.DrawPoint(new Vector2(x, y), color[x + (y * Game1.chunkSize)]);
+                }
+            }
 
             if (Game1.Debug) {
                 //
@@ -80,7 +85,7 @@ namespace SteeringBehaviors {
 
             // Create an arc of 'detector points'
             int degrees = (int)MathHelper.ToDegrees(visionAngle);
-            int stepSize = 15;
+            int stepSize = 30;
             List<Vector2> detectorPoints = new List<Vector2>();
             for (int i = -degrees; i < degrees; i+=stepSize) {
                 Vector2 point = Helper.RotateAroundOrigin(ahead, colliderPosition, MathHelper.ToRadians(i));

@@ -22,6 +22,8 @@ namespace SteeringBehaviors {
         private SpriteFont font;
         private int creatureAmount = 1;
         private int maxFrameRate = 60;
+        private Texture2D image;
+        public static int chunkSize = 32;
 
         public Game1() {
             graphics = new GraphicsDeviceManager(this);
@@ -45,16 +47,31 @@ namespace SteeringBehaviors {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            image = Content.Load<Texture2D>("penguin-cartoon");
+            Color[] pixels = new Color[image.Bounds.Height * image.Bounds.Width];
+            image.GetData<Color>(pixels);
+            for (int x = 0; x < image.Bounds.Width; x+=chunkSize) {
+                for (int y = 0; y < image.Bounds.Height; y+=chunkSize) {
+                    Color[] colors = new Color[chunkSize * chunkSize];
+                    for (int _x = 0; _x < chunkSize; _x++) {
+                        for (int _y = 0; _y < chunkSize; _y++) {
+                            colors[_x + (_y * chunkSize)] = pixels[((x+_x) + ((y+_y) * image.Bounds.Width))];
+                        }
+                    }
+                    creatures.Add(new Creature(new Vector2(x, y), chunkSize, colors, spriteBatch));
+                }
+            }
+
             // Create target and creature(s)
             target = new Target(RandomVector(), spriteBatch);
-            for (int i = 0; i < creatureAmount; i++) {
-                creatures.Add(new Creature(
-                    RandomVector(),
-                    10,
-                    Color.White,
-                    spriteBatch
-                ));
-            }
+            //for (int i = 0; i < creatureAmount; i++) {
+            //    creatures.Add(new Creature(
+            //        RandomVector(),
+            //        10,
+            //        Color.White,
+            //        spriteBatch
+            //    ));
+            //}
 
             // Load custom font
             font = Content.Load<SpriteFont>("font");
@@ -88,7 +105,7 @@ namespace SteeringBehaviors {
 
             if (Keyboard.GetState().IsKeyUp(Keys.A) && previousKeyboardState.IsKeyDown(Keys.A)) // A - Add debug creature
 {
-                creatures.Add(new Creature(Mouse.GetState().Position.ToVector2(), 10, Color.White, spriteBatch));
+                //creatures.Add(new Creature(Mouse.GetState().Position.ToVector2(), 10, Color.White, spriteBatch));
             }
 
             if (Mouse.GetState().RightButton == ButtonState.Released && previousMouseState.RightButton == ButtonState.Pressed) // RIGHT_BUTTON - Add obstacle
@@ -107,9 +124,11 @@ namespace SteeringBehaviors {
             previousKeyboardState = Keyboard.GetState();
 
             // Update objects
-            foreach (Creature creature in creatures) {
-                creature.Update(target, creatures.Concat<Collider>(obstacles).ToList<Collider>());
-            }
+            List<Collider> allColliders = creatures.Concat<Collider>(obstacles).ToList<Collider>();
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                foreach (Creature creature in creatures) {
+                    creature.Update(target, allColliders);
+                }
 
             target.Update(creatures);
 
